@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://de3qtoj3stxiy"]
+
+[sub_resource type="TileSet" id="TileSet_f6e1c"]
+tile_size = Vector2i(42, 42)
+
+[node name="Map" type="TileMap"]
+position = Vector2(360, 360)
+tile_set = SubResource("TileSet_f6e1c")
+format = 2
+metadata/_edit_vertical_guides_ = [1153.0]
+metadata/_edit_horizontal_guides_ = [647.0]
