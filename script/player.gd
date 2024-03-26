@@ -31,17 +31,20 @@ var body_up_down_counter = 0
 var body_left_right_counter = 0
 var random = RandomNumberGenerator.new()
 var score = 0
+var timer = Timer.new()
+var old_body_length = body_length
+var first_body_texture_draw = true
+var first_body_texture_draw_is_vertical = false
+var first_body_texture_draw_is_horizontal = false
 
 func _ready():
-	change_score()
-	
-	var timer = Timer.new()
-	timer.wait_time = move_delay
-	timer.one_shot = false
-	timer.timeout.connect(_on_Timer_timeout)
-	add_child(timer)
-	timer.start()
-	
+	change_score_text()
+	start_timer()
+	prepare_snake_body()
+	init_eat()
+	generate_eat_position()
+
+func prepare_snake_body():
 	var previous_position = tile_map.local_to_map(global_position)
 	
 	for i in range(body_length):
@@ -58,11 +61,21 @@ func _ready():
 		positions_history.append(current_position)
 	body_segments[-1].texture = body_segment_texture_end_right
 	positions_history.pop_back()
-	
+
+func start_timer():
+	timer.wait_time = move_delay
+	timer.one_shot = false
+	timer.timeout.connect(_on_Timer_timeout)
+	add_child(timer)
+	timer.start()
+
+func timer_stop():
+	timer.stop()
+
+func init_eat():
 	var eat = $"../../Food/Eat"
 	var eatCallable = Callable(eat, "_on_sneak_head_sprite_move_eat_to_position")
 	self.connect("move_eat_to_position", eatCallable)
-	generate_eat_position()
 
 func generate_eat_position():
 	var head_position = tile_map.local_to_map(global_position)
@@ -76,9 +89,13 @@ func generate_eat_position():
 	while eat_y_position == head_position.x or eat_y_position in body_segments:
 		eat_y_position = random.randi_range(3, 30)
 		
-	print("position generated")
 	move_eat_to_position.emit(eat_x_position, eat_y_position)
 		
+func _process(delta):
+	var end_screen = $"../../EndScreen"
+	if end_screen.visible:
+		if Input.is_action_pressed("reset"):
+			get_tree().reload_current_scene()
 
 func set_horizontal_body_texture(segment):
 	if body_down:
@@ -126,6 +143,9 @@ func get_tail_position(dir, pos):
 	return pos
 
 func _on_Timer_timeout():
+	if body_length > old_body_length: #need for fix bug
+		old_body_length += 1
+		body_length = old_body_length 
 	if requested_direction != null:
 		direction = requested_direction["dir"]
 		global_rotation = requested_direction["rot"]
@@ -146,15 +166,24 @@ func update_body_positions():
 			update_body_texture(i)
 			
 	reset_body_texture_counter()
+	
+	first_body_texture_draw = true
+	first_body_texture_draw_is_vertical = false
+	first_body_texture_draw_is_horizontal = false
+	
 	if self_bite():
 		end_game()
 	
 func reset_body_texture_counter():
 	if !body_up_down_counter % 2:
 		body_down = !body_down
+	if !first_body_texture_draw_is_horizontal:
+		body_down = !body_down
 	body_up_down_counter = 0
 	
 	if !body_left_right_counter % 2:
+		body_left = !body_left
+	if first_body_texture_draw_is_vertical:
 		body_left = !body_left
 	body_left_right_counter = 0
 	
@@ -163,6 +192,7 @@ func update_body_texture(i):
 		var head_position = tile_map.local_to_map(global_position)
 		update_body_texture_behind_head(head_position, i)
 	elif i < positions_history.size() - 1:
+		
 		update_body_texture_behind_head(positions_history[i-1], i)
 	else:
 		update_bodyy_texture_end(i)
@@ -179,14 +209,19 @@ func update_bodyy_texture_end(i):
 		body_segments[i].texture = body_segment_texture_end_down
 
 func update_body_texture_behind_head(before_position, i):
-	if before_position.y == positions_history[i].y and \
-		positions_history[i].y == positions_history[i+1].y:
-			
+	
+	
+	
+	if before_position.y == positions_history[i].y and positions_history[i].y == positions_history[i+1].y:
 		set_horizontal_body_texture(body_segments[i])
-	elif before_position.x == positions_history[i].x and \
-		positions_history[i].x == positions_history[i+1].x:
-			
+		if first_body_texture_draw:
+			first_body_texture_draw = false
+			first_body_texture_draw_is_horizontal = true
+	elif before_position.x == positions_history[i].x and positions_history[i].x == positions_history[i+1].x:
 		set_vertical_body_texture(body_segments[i])
+		if first_body_texture_draw:
+			first_body_texture_draw = false
+			first_body_texture_draw_is_vertical = false
 	elif before_position.x <= positions_history[i].x and before_position.y >= positions_history[i].y and \
 		positions_history[i].x >= positions_history[i + 1].x and positions_history[i].y <= positions_history[i + 1].y:
 		body_segments[i].texture = body_segment_texture_turn_down_left
@@ -204,12 +239,17 @@ func self_bite():
 	var head_position = tile_map.local_to_map(global_position)
 	return head_position in positions_history
 	
+func _on_end_game():
+	end_game()
+	
 func end_game():
-	print("end game with scoore: " + str(score))
-	get_tree().reload_current_scene()
-
+	timer_stop()
+	var score_end_label = %GameOverScoreLabel
+	score_end_label.text = "Score: " + str(score)
+	var end_screen = $"../../EndScreen"
+	end_screen.visible = true
+	
 func _on_eat_area_2d_child_entered_tree():
-	print("_on_eat_area_2d_child_entered_tree")
 	generate_eat_position()
 	add_body_segment()
 	
@@ -234,9 +274,9 @@ func add_body_segment():
 	
 	positions_history.append(current_position)
 	segment.hide()
-	body_length +=1
+	body_length += 1
 	score += 1
-	change_score()
+	change_score_text()
 	
-func change_score():
+func change_score_text():
 	score_label.text = "Score: " + str(score)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://bb6g06jmmc17x"]
+[gd_scene load_steps=17 format=3 uid="uid://bb6g06jmmc17x"]
 
 [ext_resource type="Texture2D" uid="uid://bfxxm1rbssekr" path="res://assets/Tile_map_env.png" id="1_4r541"]
 [ext_resource type="Script" path="res://script/player.gd" id="2_qo38y"]
@@ -8,6 +8,8 @@
 [ext_resource type="Script" path="res://script/Eat.gd" id="6_5gnqy"]
 [ext_resource type="Script" path="res://script/EatArea2D.gd" id="7_q2w5e"]
 [ext_resource type="FontFile" uid="uid://bd6w64c1657no" path="res://assets/fonts/static/Nunito-Bold.ttf" id="8_5y22w"]
+[ext_resource type="FontFile" uid="uid://lsvkr0yeuik4" path="res://assets/fonts/static/Nunito-BlackItalic.ttf" id="9_fwka4"]
+[ext_resource type="FontFile" uid="uid://cgds84nma03oc" path="res://assets/fonts/static/Nunito-Black.ttf" id="10_y4mdq"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_cbggo"]
 texture = ExtResource("1_4r541")
@@ -91,7 +93,7 @@ position = Vector2(200, 200)
 [node name="SneakHeadSprite" type="Sprite2D" parent="Snake"]
 texture = ExtResource("5_kgo8s")
 script = ExtResource("2_qo38y")
-move_delay = 0.5
+move_delay = 0.075
 
 [node name="SnakeHeadArea2D" type="Area2D" parent="Snake/SneakHeadSprite"]
 script = ExtResource("3_qogg8")
@@ -114,5 +116,47 @@ theme_override_constants/outline_size = 5
 theme_override_fonts/font = ExtResource("8_5y22w")
 theme_override_font_sizes/font_size = 18
 text = "Score: "
+
+[node name="EndScreen" type="Node2D" parent="."]
+visible = false
+
+[node name="Polygon2D" type="Polygon2D" parent="EndScreen"]
+color = Color(0, 0, 0, 0.784314)
+polygon = PackedVector2Array(0, 0, 512, 0, 512, 512, 0, 512)
+
+[node name="GameOverLabel" type="Label" parent="EndScreen"]
+unique_name_in_owner = true
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 89.0
+offset_top = 161.0
+offset_right = 421.0
+offset_bottom = 249.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("9_fwka4")
+theme_override_font_sizes/font_size = 64
+text = "Game over"
+
+[node name="GameOverScoreLabel" type="Label" parent="EndScreen"]
+unique_name_in_owner = true
+offset_left = 93.0
+offset_top = 243.0
+offset_right = 217.0
+offset_bottom = 288.0
+theme_override_fonts/font = ExtResource("10_y4mdq")
+theme_override_font_sizes/font_size = 32
+text = "Score: 0"
+
+[node name="Label" type="Label" parent="EndScreen"]
+offset_left = 123.0
+offset_top = 459.0
+offset_right = 395.0
+offset_bottom = 482.0
+theme_override_fonts/font = ExtResource("8_5y22w")
+text = "Press <Enter> or <Space> to restart"
 
 [connection signal="area_entered" from="TileMap/KillArea" to="Snake/SneakHeadSprite/SnakeHeadArea2D" method="_on_kill_area_area_entered"]
